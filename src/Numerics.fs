@@ -1,5 +1,6 @@
-#nowarn "64" 
-#nowarn "77" 
+#nowarn "9"
+#nowarn "64"
+#nowarn "77"
 namespace Alloy
 
 open FSharp.NativeInterop

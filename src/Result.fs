@@ -1,3 +1,4 @@
+#nowarn "9"
 namespace Alloy
 
 open Alloy.ValueOption
