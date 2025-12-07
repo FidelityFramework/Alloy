@@ -353,6 +353,89 @@ module Memory =
             ((^T) : (member AsSpan : unit -> Span< ^U >) buffer)
             
         /// <summary>Creates a span from a section of a buffer that has an AsSpan method</summary>
-        let inline asSpanSlice< ^T, ^U when ^T : (member AsSpan : int * int -> Span< ^U >)> 
+        let inline asSpanSlice< ^T, ^U when ^T : (member AsSpan : int * int -> Span< ^U >)>
             (buffer: ^T) start length : Span< ^U > =
             ((^T) : (member AsSpan : int * int -> Span< ^U >) (buffer, start, length))
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Semantic Memory Primitives
+    // ═══════════════════════════════════════════════════════════════════════
+    // These primitives express INTENT rather than implementation.
+    // The Firefly compiler (via Alex) will lower these to target-optimal code:
+    // - ARM: Tight stack-based loops
+    // - x86_64: SIMD vectorized operations (SSE/AVX)
+    // - GPU: Parallel lane execution
+    // - Large sizes: memcpy/memset intrinsics
+    //
+    // At the F# level, these are implemented as simple loops for .NET compat.
+    // The Firefly compiler recognizes these patterns and emits optimal code.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Copy bytes from source to destination.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="src">Source pointer</param>
+    /// <param name="dest">Destination pointer</param>
+    /// <param name="length">Number of bytes to copy</param>
+    let inline copy (src: nativeptr<byte>) (dest: nativeptr<byte>) (length: int) : unit =
+        for i = 0 to length - 1 do
+            NativePtr.set dest i (NativePtr.get src i)
+
+    /// <summary>
+    /// Copy elements from source to destination with type safety.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="src">Source pointer</param>
+    /// <param name="dest">Destination pointer</param>
+    /// <param name="count">Number of elements to copy</param>
+    let inline copyElements<'T when 'T : unmanaged> (src: nativeptr<'T>) (dest: nativeptr<'T>) (count: int) : unit =
+        for i = 0 to count - 1 do
+            NativePtr.set dest i (NativePtr.get src i)
+
+    /// <summary>
+    /// Zero a memory region.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="dest">Destination pointer</param>
+    /// <param name="length">Number of bytes to zero</param>
+    let inline zero (dest: nativeptr<byte>) (length: int) : unit =
+        for i = 0 to length - 1 do
+            NativePtr.set dest i 0uy
+
+    /// <summary>
+    /// Zero elements in a memory region with type safety.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="dest">Destination pointer</param>
+    /// <param name="count">Number of elements to zero</param>
+    let inline zeroElements<'T when 'T : unmanaged> (dest: nativeptr<'T>) (count: int) : unit =
+        for i = 0 to count - 1 do
+            NativePtr.set dest i Unchecked.defaultof<'T>
+
+    /// <summary>
+    /// Fill a memory region with a byte value.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="dest">Destination pointer</param>
+    /// <param name="value">Byte value to fill with</param>
+    /// <param name="length">Number of bytes to fill</param>
+    let inline fill (dest: nativeptr<byte>) (value: byte) (length: int) : unit =
+        for i = 0 to length - 1 do
+            NativePtr.set dest i value
+
+    /// <summary>
+    /// Compare two memory regions for equality.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="a">First memory region</param>
+    /// <param name="b">Second memory region</param>
+    /// <param name="length">Number of bytes to compare</param>
+    /// <returns>True if regions are identical</returns>
+    let inline compare (a: nativeptr<byte>) (b: nativeptr<byte>) (length: int) : bool =
+        let mutable equal = true
+        let mutable i = 0
+        while equal && i < length do
+            equal <- NativePtr.get a i = NativePtr.get b i
+            i <- i + 1
+        equal

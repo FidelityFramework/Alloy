@@ -142,22 +142,35 @@ module Core =
     /// <summary>
     /// Gets the ASCII value of '0' (48).
     /// </summary>
-    let inline asciiZero : int = 48
+    [<Literal>]
+    let asciiZero : int = 48
 
     /// <summary>
     /// Gets the ASCII value of 'A' (65).
     /// </summary>
-    let inline asciiUpperA : int = 65
+    [<Literal>]
+    let asciiUpperA : int = 65
 
     /// <summary>
     /// Gets the ASCII value of 'a' (97).
     /// </summary>
-    let inline asciiLowerA : int = 97
+    [<Literal>]
+    let asciiLowerA : int = 97
 
     /// <summary>
     /// Print a value to stdout.
     /// </summary>
     let inline print (x: 'T) = printf "%A" x
+
+    // ===================================
+    // Control flow primitives
+    // ===================================
+
+    /// <summary>
+    /// Discards the value and returns unit.
+    /// Use with pipe operator: someFunc() |> ignore
+    /// </summary>
+    let ignore<'T> (_: 'T) : unit = ()
 
     // ===================================
     // Option functions

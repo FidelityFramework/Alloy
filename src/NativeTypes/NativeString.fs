@@ -67,3 +67,134 @@ module NativeString =
         for i = 0 to s.Length - 1 do
             NativePtr.set dest i (NativePtr.get s.Pointer i)
         s.Length
+
+    /// <summary>
+    /// ByteArray is a type alias for NativeStr.
+    /// Used for byte array literals ("..."B) which compile to the same
+    /// representation as native strings: a pointer to bytes plus length.
+    /// </summary>
+    type ByteArray = NativeStr
+
+    /// <summary>
+    /// ByteArray operations module.
+    /// </summary>
+    [<RequireQualifiedAccess>]
+    module ByteArray =
+        /// Creates a ByteArray from a pointer and length.
+        let inline create (ptr: nativeptr<byte>) (len: int) : ByteArray =
+            NativeStr(ptr, len)
+
+        /// Returns the length of the byte array.
+        let inline length (arr: ByteArray) : int =
+            arr.Length
+
+        /// Returns the pointer to the byte data.
+        let inline pointer (arr: ByteArray) : nativeptr<byte> =
+            arr.Pointer
+
+        /// Gets the byte at the specified index.
+        let inline get (index: int) (arr: ByteArray) : byte =
+            NativePtr.get arr.Pointer index
+
+        /// Creates an empty ByteArray.
+        let inline empty () : ByteArray =
+            NativeStr(NativePtr.nullPtr<byte>, 0)
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Byte literal helpers
+    // These make it easier to work with F# byte literals ("..."B)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// Creates a NativeStr from a byte literal (byte[]).
+    /// Automatically handles the null terminator that F# adds.
+    /// Example: let hello = NativeStr.ofBytes "Hello"B
+    let inline ofBytes (bytes: byte[]) : NativeStr =
+        let len = bytes.Length - 1  // F# byte literals include null terminator
+        let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
+        NativeStr(ptr, len)
+
+    /// Gets a pointer to the start of a byte literal.
+    /// Useful when you need the raw pointer.
+    let inline bytesPtr (bytes: byte[]) : nativeptr<byte> =
+        NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
+
+    /// Gets the length of a byte literal (excluding null terminator).
+    let inline bytesLen (bytes: byte[]) : int =
+        bytes.Length - 1
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Semantic String Primitives
+    // ═══════════════════════════════════════════════════════════════════════
+    // These primitives express INTENT for string operations.
+    // The Firefly compiler (via Alex) will lower these to target-optimal code.
+    // At the F# level, these delegate to Memory.copy for .NET compat.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Copy a NativeStr to a destination buffer, returning a new NativeStr.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="dest">Destination buffer pointer</param>
+    /// <param name="s">Source NativeStr to copy</param>
+    /// <returns>A new NativeStr pointing to the destination</returns>
+    let inline copyToBuffer (dest: nativeptr<byte>) (s: NativeStr) : NativeStr =
+        for i = 0 to s.Length - 1 do
+            NativePtr.set dest i (NativePtr.get s.Pointer i)
+        NativeStr(dest, s.Length)
+
+    /// <summary>
+    /// Concatenate two NativeStr values into a destination buffer.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// </summary>
+    /// <param name="dest">Destination buffer pointer (must have capacity for both strings)</param>
+    /// <param name="a">First string</param>
+    /// <param name="b">Second string</param>
+    /// <returns>A new NativeStr pointing to the concatenated result</returns>
+    let inline concat2 (dest: nativeptr<byte>) (a: NativeStr) (b: NativeStr) : NativeStr =
+        // Copy first string
+        for i = 0 to a.Length - 1 do
+            NativePtr.set dest i (NativePtr.get a.Pointer i)
+        // Copy second string after first
+        let destB = NativePtr.add dest a.Length
+        for i = 0 to b.Length - 1 do
+            NativePtr.set destB i (NativePtr.get b.Pointer i)
+        NativeStr(dest, a.Length + b.Length)
+
+    /// <summary>
+    /// Concatenate three NativeStr values into a destination buffer.
+    /// This is a semantic primitive - Firefly will emit target-optimal code.
+    /// Common pattern: prefix + content + suffix (e.g., "Hello, " + name + "!")
+    /// </summary>
+    /// <param name="dest">Destination buffer pointer</param>
+    /// <param name="a">First string</param>
+    /// <param name="b">Second string</param>
+    /// <param name="c">Third string</param>
+    /// <returns>A new NativeStr pointing to the concatenated result</returns>
+    let inline concat3 (dest: nativeptr<byte>) (a: NativeStr) (b: NativeStr) (c: NativeStr) : NativeStr =
+        let mutable pos = 0
+        // Copy first string
+        for i = 0 to a.Length - 1 do
+            NativePtr.set dest pos (NativePtr.get a.Pointer i)
+            pos <- pos + 1
+        // Copy second string
+        for i = 0 to b.Length - 1 do
+            NativePtr.set dest pos (NativePtr.get b.Pointer i)
+            pos <- pos + 1
+        // Copy third string
+        for i = 0 to c.Length - 1 do
+            NativePtr.set dest pos (NativePtr.get c.Pointer i)
+            pos <- pos + 1
+        NativeStr(dest, pos)
+
+    /// <summary>
+    /// Create a NativeStr from a byte literal, copying to a destination buffer.
+    /// This is useful when you need a mutable copy of a string literal.
+    /// </summary>
+    /// <param name="dest">Destination buffer pointer</param>
+    /// <param name="bytes">Source byte literal</param>
+    /// <returns>A new NativeStr pointing to the copy</returns>
+    let inline fromBytesTo (dest: nativeptr<byte>) (bytes: byte[]) : NativeStr =
+        let len = bytes.Length - 1  // Exclude null terminator
+        for i = 0 to len - 1 do
+            NativePtr.set dest i bytes.[i]
+        NativeStr(dest, len)

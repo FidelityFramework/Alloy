@@ -204,3 +204,63 @@ module Console =
     let inline fromStatic (ptr: nativeptr<byte>) (len: int) : NativeStr =
         NativeStr(ptr, len)
 
+    // ═══════════════════════════════════════════════════════════════════
+    // .NET-style aliases (PascalCase)
+    // These provide a familiar API for developers coming from .NET
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// Writes a NativeStr to stdout (no newline). Alias for 'write'.
+    let inline Write (s: NativeStr) : unit = write s
+
+    /// Writes a NativeStr to stdout followed by a newline. Alias for 'writeln'.
+    let inline WriteLine (s: NativeStr) : unit = writeln s
+
+    /// Writes just a newline to stdout. Alias for 'writelnEmpty'.
+    let inline WriteLineEmpty () : unit = writelnEmpty ()
+
+    /// Reads a line from stdin, returning a NativeStr. Alias for 'readln'.
+    let inline ReadLine (buffer: nativeptr<byte>) (maxLen: int) : NativeStr =
+        readln buffer maxLen
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Prompt helper (write + read in one call)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// Writes a prompt to stdout, then reads a line from stdin.
+    /// Returns a NativeStr pointing into the provided buffer.
+    let inline prompt (promptStr: NativeStr) (buffer: nativeptr<byte>) (maxLen: int) : NativeStr =
+        write promptStr
+        readln buffer maxLen
+
+    /// Writes a prompt using raw bytes, then reads a line from stdin.
+    /// Useful with byte literals: prompt' "Name: "B buffer 256
+    let inline prompt' (promptBytes: byte[]) (buffer: nativeptr<byte>) (maxLen: int) : NativeStr =
+        // Write prompt bytes (excluding null terminator)
+        let len = promptBytes.Length - 1  // byte literals have null terminator
+        let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&promptBytes.[0])
+        writeBytes STDOUT_FILENO ptr len |> ignore
+        readln buffer maxLen
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Byte literal output (direct byte[] support)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// Writes a byte literal to stdout (no newline).
+    /// Example: Console.writeB "Hello"B
+    let inline writeB (bytes: byte[]) : unit =
+        let len = bytes.Length - 1  // byte literals include null terminator
+        let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
+        writeBytes STDOUT_FILENO ptr len |> ignore
+
+    /// Writes a byte literal to stdout followed by a newline.
+    /// Example: Console.writelnB "Hello"B
+    let inline writelnB (bytes: byte[]) : unit =
+        writeB bytes
+        newLine () |> ignore
+
+    /// .NET-style: Writes a byte literal to stdout (no newline).
+    let inline WriteBytes (bytes: byte[]) : unit = writeB bytes
+
+    /// .NET-style: Writes a byte literal to stdout followed by a newline.
+    let inline WriteLineBytes (bytes: byte[]) : unit = writelnB bytes
+
