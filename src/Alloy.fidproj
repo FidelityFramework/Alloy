@@ -1,19 +1,21 @@
-# Alloy - Fidelity Core Library for Native Compilation
-# Self-contained library with no .NET dependencies
+# Alloy - Native F# Standard Library for Firefly
+# No BCL dependencies - pure native types
 
 [package]
 name = "Alloy"
 version = "0.1.0"
-description = "Core library for Fidelity native compilation"
-authors = ["SpeakEZ LLC"]
-license = "MIT"
-
-[compilation]
-memory_model = "stack_only"
+description = "Native F# standard library for freestanding compilation"
 
 [build]
-# Source files in compilation order (dependencies first)
 sources = [
+    # Native Types (foundation - no dependencies)
+    "NativeTypes/NativeInt.fs",
+    "NativeTypes/NativePtr.fs",
+    "NativeTypes/NativeSpan.fs",
+    "NativeTypes/NativeArray.fs",
+    "NativeTypes/NativeString.fs",
+
+    # Core modules
     "Core.fs",
     "Math.fs",
     "Memory.fs",

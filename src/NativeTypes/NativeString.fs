@@ -33,8 +33,9 @@ module NativeString =
 
     /// <summary>
     /// Creates an empty NativeStr.
+    /// Returns a struct with null pointer and zero length.
     /// </summary>
-    let inline empty : NativeStr =
+    let inline empty () : NativeStr =
         NativeStr(NativePtr.nullPtr<byte>, 0)
 
     /// <summary>

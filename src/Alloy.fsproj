@@ -13,8 +13,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Core Alloy files (from FidelityHelloWorld) -->
+    <!-- Core Alloy files -->
     <!-- Order matters: dependencies first -->
+
+    <!-- Native Types (foundation - no BCL dependencies) -->
+    <Compile Include="NativeTypes/NativeInt.fs" />
+    <Compile Include="NativeTypes/NativePtr.fs" />
+    <Compile Include="NativeTypes/NativeSpan.fs" />
+    <Compile Include="NativeTypes/NativeArray.fs" />
+    <Compile Include="NativeTypes/NativeString.fs" />
+
+    <!-- Core modules -->
     <Compile Include="Core.fs" />
     <Compile Include="Math.fs" />
     <Compile Include="Memory.fs" />

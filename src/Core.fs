@@ -119,6 +119,41 @@ module Core =
     let inline string< ^T when ^T : (member ToString : unit -> string)> (x: ^T) =
         (^T : (member ToString : unit -> string) x)
 
+    // ===================================
+    // Character conversion (no BCL char type)
+    // ===================================
+
+    /// <summary>
+    /// Converts a char to its integer (Unicode codepoint) value.
+    /// In native compilation, char is represented as i32.
+    /// </summary>
+    let inline charToInt (c: char) : int = int c
+
+    /// <summary>
+    /// Converts an integer to a char.
+    /// </summary>
+    let inline intToChar (i: int) : char = char i
+
+    /// <summary>
+    /// Converts a char to byte (truncates to 8 bits).
+    /// </summary>
+    let inline charToByte (c: char) : byte = byte c
+
+    /// <summary>
+    /// Gets the ASCII value of '0' (48).
+    /// </summary>
+    let inline asciiZero : int = 48
+
+    /// <summary>
+    /// Gets the ASCII value of 'A' (65).
+    /// </summary>
+    let inline asciiUpperA : int = 65
+
+    /// <summary>
+    /// Gets the ASCII value of 'a' (97).
+    /// </summary>
+    let inline asciiLowerA : int = 97
+
     /// <summary>
     /// Print a value to stdout.
     /// </summary>
