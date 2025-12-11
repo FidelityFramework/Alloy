@@ -207,36 +207,50 @@ module Console =
         NativeStr(ptr, len)
 
     // ═══════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════
     // BCL-compatible string output API
     // These provide familiar Console.Write/WriteLine signatures.
-    // String overloads convert F# strings to native representation at compile time.
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Uses SRTP to enable both NativeStr and string to work with Write/WriteLine.
+    // For string literals, Firefly performs compile-time transformation:
+    // 1. The string literal bytes are placed in the data section
+    // 2. A NativeStr (ptr, len) is constructed pointing to them
+    // 3. The write function is called with that NativeStr
+    //
+    // At .NET runtime, strings are encoded to UTF-8 using Alloy.Utf8.getBytes
+    // (pure F# implementation) and written. No BCL System.Text.Encoding dependency.
     // ═══════════════════════════════════════════════════════════════════
 
-    /// Writes a NativeStr to stdout (no newline).
-    let inline WriteNative (s: NativeStr) : unit =
+    /// Internal: Write a NativeStr to stdout
+    let inline private writeNativeStr (s: NativeStr) : unit =
         write s
 
-    /// Writes a NativeStr to stdout followed by a newline.
-    let inline WriteLineNative (s: NativeStr) : unit =
-        writeln s
+    /// Internal: Write an F# string to stdout (UTF-8 encoded)
+    /// Uses Alloy's native Utf8.getBytes - pure F# implementation, no BCL dependency
+    let inline private writeSystemString (s: string) : unit =
+        let bytes = Utf8.getBytes s
+        let len = bytes.Length
+        if len > 0 then
+            let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
+            writeBytes STDOUT_FILENO ptr len |> ignore
 
-    /// Writes an F# string literal to stdout (no newline).
-    /// Firefly transforms string literals to native byte representation during compilation.
-    let inline Write (s: string) : unit =
-        // For Firefly AOT compilation, string literals become static byte arrays
-        // placed in the data section. The compiler generates direct output from there.
-        // This empty body enables FCS type checking to pass while Firefly handles
-        // the actual code generation for string literals.
-        ()
+    /// Type that enables polymorphic Write operations via SRTP
+    type WritableString =
+        | WritableString
 
-    /// Writes an F# string literal to stdout followed by a newline.
-    /// Firefly transforms string literals to native byte representation during compilation.
-    let inline WriteLine (s: string) : unit =
-        // For Firefly AOT compilation, string literals become static byte arrays.
-        // This empty body enables FCS type checking to pass.
-        ()
+        static member inline ($) (WritableString, s: NativeStr) = writeNativeStr s
+        static member inline ($) (WritableString, s: string) = writeSystemString s
 
-    /// Writes just a newline to stdout. Alias for 'writelnEmpty'.
+    /// Writes to stdout (no newline). Accepts both NativeStr and string.
+    let inline Write s = WritableString $ s
+
+    /// Writes to stdout followed by a newline. Accepts both NativeStr and string.
+    let inline WriteLine s =
+        WritableString $ s
+        newLine () |> ignore
+
+    /// Writes just a newline to stdout.
     let inline WriteLineEmpty () : unit = writelnEmpty ()
 
     /// Reads a line from stdin, returning the input.

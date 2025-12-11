@@ -14,7 +14,8 @@ open System.Runtime.InteropServices
 /// calling convention) and Alex dispatches to the appropriate binding.
 ///
 /// DO NOT add platform-specific code here. This module must remain platform-agnostic.
-/// Platform implementations belong in Alex/Bindings/{Linux,MacOS,Windows,Embedded}/.
+/// Alex provides platform-specific implementations via Bindings modules, dispatching
+/// by entry point name and target platform to generate platform-appropriate MLIR.
 module Primitives =
 
     // ═══════════════════════════════════════════════════════════════════════════
