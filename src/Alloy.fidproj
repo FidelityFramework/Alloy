@@ -15,12 +15,53 @@ sources = [
     "NativeTypes/NativeArray.fs",
     "NativeTypes/NativeString.fs",
 
+    # Fsil - zero-cost SRTP operations (foundation)
+    "Fsil/Core.fs",
+
     # Core modules
     "Core.fs",
+
+    # ValueOption - stack-allocated option type
+    "ValueOption.fs",
+
+    # Result - error handling
+    "Result.fs",
+
+    # Numerics (type classes for arithmetic/comparison)
+    "Numerics.fs",
+
+    # Types (BAREWire types, depends on Numerics)
+    "Types.fs",
+
+    # Math (higher-level math functions)
     "Math.fs",
+
+    # Memory operations
     "Memory.fs",
+
+    # Span types (depends on Fsil, Numerics)
+    "Span.fs",
+
+    # Binary conversion utilities
+    "Binary.fs",
+
+    # Text formatting
     "Text.fs",
+
+    # UTF-8 encoding/decoding
     "Utf8.fs",
+
+    # String operations (depends on Core, Numerics)
+    "String.fs",
+
+    # Native buffer types
+    "NativeBuffer.fs",
+
+    # UUID implementation
+    "Uuid.fs",
+
+    # Operators (wraps Numerics with standard operator symbols)
+    "Operators.fs",
 
     # Primitives (extern declarations - must come before Console/Time)
     "Primitives.fs",

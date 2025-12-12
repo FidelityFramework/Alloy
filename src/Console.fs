@@ -46,18 +46,18 @@ module Console =
 
     /// Writes a NativeStr to stdout.
     let inline writeStrOut (str: NativeStr) : int =
-        writeBytes STDOUT_FILENO str.Pointer str.Length
+        writeBytes 1 str.Pointer str.Length
 
     /// Writes a NativeStr to stderr.
     let inline writeStrErr (str: NativeStr) : int =
-        writeBytes STDERR_FILENO str.Pointer str.Length
+        writeBytes 2 str.Pointer str.Length
 
     /// Writes a null-terminated byte sequence to stdout.
     let inline writeNullTerminated (ptr: nativeptr<byte>) : int =
         let mutable len = 0
         while NativePtr.get ptr len <> 0uy do
             len <- len + 1
-        writeBytes STDOUT_FILENO ptr len
+        writeBytes 1 ptr len
 
     /// Writes raw bytes to the specified file descriptor.
     let inline writeRaw (fd: int) (ptr: nativeptr<byte>) (len: int) : int =
@@ -75,7 +75,7 @@ module Console =
 
     /// Writes a newline to stdout.
     let inline newLine () : int =
-        writeNewLine STDOUT_FILENO
+        writeNewLine 1
 
     // ═══════════════════════════════════════════════════════════════════
     // Low-level input functions
@@ -106,7 +106,7 @@ module Console =
 
     /// Reads a line from stdin into a buffer.
     let inline readLine (buffer: nativeptr<byte>) (maxLength: int) : int =
-        readLineInto STDIN_FILENO buffer maxLength
+        readLineInto 0 buffer maxLength
 
     /// Reads into any buffer type with Pointer and Length properties.
     let inline readInto< ^T when ^T : (member Pointer : nativeptr<byte>) and ^T : (member Length : int)>
@@ -139,7 +139,7 @@ module Console =
     /// Writes a NativeStr to stderr followed by a newline.
     let inline writelnErr (s: NativeStr) : unit =
         writeStrErr s |> ignore
-        writeNewLine STDERR_FILENO |> ignore
+        writeNewLine 2 |> ignore
 
     /// Reads a line from stdin, returning a NativeStr.
     /// The caller provides the buffer; the returned NativeStr points into it.
@@ -159,7 +159,7 @@ module Console =
 
     /// Writes a 32-bit integer to stdout.
     let inline writeInt (value: int) : unit =
-        writeInt32 STDOUT_FILENO value
+        writeInt32 1 value
 
     /// Writes a 32-bit integer to stdout followed by a newline.
     let inline writelnInt (value: int) : unit =
@@ -174,7 +174,7 @@ module Console =
 
     /// Writes a 64-bit integer to stdout.
     let inline writeInt64 (value: int64) : unit =
-        writeInt64To STDOUT_FILENO value
+        writeInt64To 1 value
 
     /// Writes a 64-bit integer to stdout followed by a newline.
     let inline writelnInt64 (value: int64) : unit =
@@ -233,7 +233,7 @@ module Console =
         let len = bytes.Length
         if len > 0 then
             let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
-            writeBytes STDOUT_FILENO ptr len |> ignore
+            writeBytes 1 ptr len |> ignore
 
     /// Type that enables polymorphic Write operations via SRTP
     type WritableString =
@@ -248,6 +248,15 @@ module Console =
     /// Writes to stdout followed by a newline. Accepts both NativeStr and string.
     let inline WriteLine s =
         WritableString $ s
+        newLine () |> ignore
+
+    /// Simple non-polymorphic write for F# strings
+    /// Use this for basic string output without SRTP overhead
+    let WriteStr (s: string) : unit = writeSystemString s
+
+    /// Simple non-polymorphic write for F# strings followed by newline
+    let WriteStrLn (s: string) : unit =
+        writeSystemString s
         newLine () |> ignore
 
     /// Writes just a newline to stdout.
@@ -281,7 +290,7 @@ module Console =
         // Write prompt bytes (excluding null terminator)
         let len = promptBytes.Length - 1  // byte literals have null terminator
         let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&promptBytes.[0])
-        writeBytes STDOUT_FILENO ptr len |> ignore
+        writeBytes 1 ptr len |> ignore
         readln buffer maxLen
 
     // ═══════════════════════════════════════════════════════════════════
@@ -293,7 +302,7 @@ module Console =
     let inline writeB (bytes: byte[]) : unit =
         let len = bytes.Length - 1  // byte literals include null terminator
         let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
-        writeBytes STDOUT_FILENO ptr len |> ignore
+        writeBytes 1 ptr len |> ignore
 
     /// Writes a byte literal to stdout followed by a newline.
     /// Example: Console.writelnB "Hello"B

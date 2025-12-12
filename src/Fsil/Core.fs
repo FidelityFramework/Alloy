@@ -501,25 +501,32 @@ module Operations =
         Internal.DefaultWith.Invoke((fun _ -> failwith "unwrap called on empty value"), x)
 
     /// Get the zero value for a numeric type
-    let inline zero<'a when 'a: (static member Zero: 'a)> : 'a = 'a.Zero
+    let inline zero< ^a when ^a: (static member Zero: ^a)> : ^a =
+        (^a : (static member Zero: ^a) ())
 
     /// Get the one value for a numeric type
-    let inline one<'a when 'a: (static member One: 'a)> : 'a = 'a.One
+    let inline one< ^a when ^a: (static member One: ^a)> : ^a =
+        (^a : (static member One: ^a) ())
 
     /// Get None for option-like types
-    let inline none<'a when 'a: (static member None: 'a)> : 'a = 'a.None
+    let inline none< ^a when ^a: (static member None: ^a)> : ^a =
+        (^a : (static member None: ^a) ())
 
     /// Wrap value in Some for option-like types
-    let inline some<'a, 'b when 'a: (static member Some: 'b -> 'a)> (v: 'b) : 'a = 'a.Some v
+    let inline some< ^a, 'b when ^a: (static member Some: 'b -> ^a)> (v: 'b) : ^a =
+        (^a : (static member Some: 'b -> ^a) v)
 
     /// Check if option-like type has a value
-    let inline is_some<'a when 'a: (member IsSome: bool)> (arg: 'a) : bool = arg.IsSome
+    let inline is_some< ^a when ^a: (member IsSome: bool)> (arg: ^a) : bool =
+        (^a : (member IsSome: bool) arg)
 
     /// Check if option-like type is empty
-    let inline is_none<'a when 'a: (member IsNone: bool)> (arg: 'a) : bool = arg.IsNone
+    let inline is_none< ^a when ^a: (member IsNone: bool)> (arg: ^a) : bool =
+        (^a : (member IsNone: bool) arg)
 
     /// Check if Result is Ok
-    let inline is_ok<'a when 'a: (member IsOk: bool)> (arg: 'a) : bool = arg.IsOk
+    let inline is_ok< ^a when ^a: (member IsOk: bool)> (arg: ^a) : bool =
+        (^a : (member IsOk: bool) arg)
 
     /// Check if all elements satisfy predicate
     let inline forall (pred: 't -> bool) (x: ^I) : bool =
