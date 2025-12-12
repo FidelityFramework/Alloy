@@ -33,6 +33,15 @@ module Primitives =
     extern int readBytes(int fd, nativeint buffer, int maxCount)
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // String Primitives
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Get length of a null-terminated string pointer.
+    // Alex implementations: Inline loop counting bytes until null terminator
+    [<DllImport("__fidelity", CallingConvention = CallingConvention.Cdecl, EntryPoint = "fidelity_strlen")>]
+    extern int strlen(nativeint str)
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // Time Primitives
     // ═══════════════════════════════════════════════════════════════════════════
 

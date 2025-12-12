@@ -227,13 +227,17 @@ module Console =
         write s
 
     /// Internal: Write an F# string to stdout (UTF-8 encoded)
-    /// Uses Alloy's native Utf8.getBytes - pure F# implementation, no BCL dependency
+    /// Uses stack-allocated buffer with native UTF-8 encoding - NO BCL DEPENDENCY
+    /// This is the freestanding-compatible path.
     let inline private writeSystemString (s: string) : unit =
-        let bytes = Utf8.getBytes s
-        let len = bytes.Length
-        if len > 0 then
-            let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
-            writeBytes 1 ptr len |> ignore
+        if not (isNull s) && s.Length > 0 then
+            // Stack allocate buffer for UTF-8 encoding
+            // Max 4 bytes per char for UTF-8, but most strings are ASCII
+            let maxBytes = s.Length * 4
+            let buffer = NativePtr.stackalloc<byte> maxBytes
+            let ns = Utf8.getBytesTo buffer maxBytes s
+            if ns.Length > 0 then
+                writeBytes 1 ns.Pointer ns.Length |> ignore
 
     /// Type that enables polymorphic Write operations via SRTP
     type WritableString =
