@@ -62,10 +62,12 @@ module Console =
         writeBytes fd ptr len
 
     /// Writes a single byte to the specified file descriptor.
+    /// Native compilation: &&ch on mutable byte produces nativeptr<byte> directly
     let inline writeByte (fd: int) (b: byte) : int =
         let mutable ch = b
-        let ptr = NativePtr.ofVoidPtr<byte>(NativePtr.toVoidPtr &&ch)
-        writeBytes fd ptr 1
+        // In native compilation, && on mutable byte is nativeptr<byte>
+        // The voidptr roundtrip is only needed for BCL F# type system
+        writeBytes fd &&ch 1
 
     /// Writes a newline to the specified file descriptor.
     let inline writeNewLine (fd: int) : int =
@@ -145,12 +147,8 @@ module Console =
     /// In native compilation, FNCS constructs the string from (buffer, len).
     let inline readln (buffer: nativeptr<byte>) (maxLen: int) : string =
         let len = readLine buffer maxLen
-        // FNCS provides string construction from (ptr, len)
-        // For .NET compat, we convert bytes to string
-        let bytes = Array.zeroCreate<byte> len
-        for i = 0 to len - 1 do
-            bytes.[i] <- NativePtr.get buffer i
-        System.Text.Encoding.UTF8.GetString(bytes)
+        // FNCS intrinsic: constructs NativeStr from (ptr, len)
+        Primitives.fromPointer buffer len
 
     // ═══════════════════════════════════════════════════════════════════
     // Integer output helpers

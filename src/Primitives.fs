@@ -20,12 +20,26 @@ module Primitives =
     let STDERR = 2
 
     /// Creates a string from a byte literal.
-    /// In native compilation, FNCS handles byte literal → string conversion.
+    /// In native compilation, FNCS handles byte literal → string conversion intrinsically.
     /// The -1 accounts for F#'s null terminator in byte literals.
+    ///
+    /// NATIVE: FNCS provides this as an intrinsic - byte literals become NativeStr directly.
+    /// This function exists for API consistency; actual implementation is compiler-provided.
     let inline ofBytes (bytes: byte[]) : string =
-        // FNCS provides native string construction from byte literals
-        // For .NET compat, this converts byte[] to string
-        System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1)
+        // FNCS intrinsic: byte[] literal → NativeStr
+        // The compiler recognizes this pattern and emits the string directly
+        // Length is bytes.Length - 1 (exclude null terminator)
+        Unchecked.defaultof<string> // Placeholder - FNCS provides actual implementation
+
+    /// Creates a string from a buffer pointer and length.
+    /// In native compilation, FNCS provides this as an intrinsic.
+    ///
+    /// NATIVE: Constructs NativeStr = {ptr: pointer, len: length}
+    /// This function exists for API consistency; actual implementation is compiler-provided.
+    let inline fromPointer (pointer: nativeptr<byte>) (length: int) : string =
+        // FNCS intrinsic: (ptr, len) → NativeStr
+        // The compiler recognizes this pattern and constructs the string directly
+        Unchecked.defaultof<string> // Placeholder - FNCS provides actual implementation
 
     /// Fundamental platform bindings. Alex intercepts all calls to this module.
     /// These are the lowest-level I/O and process control primitives.
@@ -40,13 +54,14 @@ module Primitives =
         let abort (_exitCode: int) : unit = ()
 
     /// Write a string to a file descriptor.
-    /// In native compilation, string has .Pointer and .Length members via FNCS.
+    /// In native compilation, string is a UTF-8 fat pointer with intrinsic Pointer and Length.
+    ///
+    /// NATIVE: NativeStr = {ptr: *u8, len: usize}
+    /// FNCS provides: s.Pointer (nativeptr<byte>), s.Length (int)
     let inline writeStr (fd: int) (s: string) : int =
-        // FNCS provides: s.Pointer (nativeptr<byte>), s.Length (int)
-        // For .NET compat, we encode to bytes
-        let bytes = System.Text.Encoding.UTF8.GetBytes(s)
-        use ptr = fixed bytes
-        Bindings.writeBytes fd (NativePtr.toNativeInt ptr) bytes.Length
+        // Native string IS UTF-8 bytes - no encoding needed
+        // Access intrinsic members provided by FNCS for NativeStr type
+        Bindings.writeBytes fd (NativePtr.toNativeInt s.Pointer) s.Length
 
     /// Write a string to stderr.
     let inline writeErr (s: string) : unit =
