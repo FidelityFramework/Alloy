@@ -9,73 +9,53 @@ type PlatformProvided = PlatformProvided
 
 /// Platform-provided bindings for Fidelity native compilation.
 ///
-/// Core I/O bindings (writeBytes, readBytes, abort) are defined in Primitives.Bindings.
-/// This module re-exports them and adds additional platform bindings (time, string, etc.).
+/// NOTE: Core I/O (write/read/exit) are now provided by FNCS Sys intrinsics:
+///   - Sys.write: fd:int -> buffer:nativeptr<byte> -> count:int -> int
+///   - Sys.read:  fd:int -> buffer:nativeptr<byte> -> maxCount:int -> int
+///   - Sys.exit:  code:int -> 'a
 ///
-/// Alex recognizes calls to both Primitives.Bindings.* and Platform.Bindings.* functions
-/// and dispatches to platform-specific implementations.
+/// This module contains additional platform bindings (time, string, etc.) that
+/// need Alex-provided implementations. These are stubs until the corresponding
+/// FNCS intrinsics are implemented.
 ///
 /// DO NOT add platform-specific code here. This module must remain platform-agnostic.
-/// Alex provides platform-specific implementations via Bindings modules, dispatching
-/// by function name and target platform to generate platform-appropriate MLIR.
 module Platform =
 
-    /// Platform binding declarations. Alex intercepts all calls to this module.
+    open FSharp.NativeInterop
+
+    /// Platform binding declarations for functions not yet provided as FNCS intrinsics.
+    /// NOTE: Use Sys.write, Sys.read, Sys.exit directly for I/O and process control.
     module Bindings =
 
         // ═══════════════════════════════════════════════════════════════════════════
-        // Console I/O Bindings (delegated to Primitives.Bindings)
-        // ═══════════════════════════════════════════════════════════════════════════
-
-        /// Write bytes to a file descriptor.
-        /// Alex implementations: Linux/macOS: write() syscall, Windows: WriteFile() API
-        let inline writeBytes (fd: int) (buffer: nativeint) (count: int) : int =
-            Primitives.Bindings.writeBytes fd buffer count
-
-        /// Read bytes from a file descriptor.
-        /// Alex implementations: Linux/macOS: read() syscall, Windows: ReadFile() API
-        let inline readBytes (fd: int) (buffer: nativeint) (maxCount: int) : int =
-            Primitives.Bindings.readBytes fd buffer maxCount
-
-        // ═══════════════════════════════════════════════════════════════════════════
-        // String Bindings
+        // String Bindings (stub - needs FNCS intrinsic)
         // ═══════════════════════════════════════════════════════════════════════════
 
         /// Get length of a null-terminated string pointer.
-        /// Alex implementations: Inline loop counting bytes until null terminator
+        /// TODO: Should be implemented as native loop or FNCS intrinsic
         let strlen (str: nativeint) : int =
             Unchecked.defaultof<int>
 
         // ═══════════════════════════════════════════════════════════════════════════
-        // Time Bindings
+        // Time Bindings (stubs - need FNCS intrinsics: Sys.clock_gettime, etc.)
         // ═══════════════════════════════════════════════════════════════════════════
 
         /// Get current time in ticks (100-nanosecond intervals since 0001-01-01).
-        /// Alex implementations: Linux: clock_gettime, macOS: gettimeofday, Windows: GetSystemTimeAsFileTime
+        /// TODO: Needs Sys.clock_gettime intrinsic
         let getCurrentTicks () : int64 =
             Unchecked.defaultof<int64>
 
         /// Get high-resolution monotonic ticks for timing.
-        /// Alex implementations: Linux: clock_gettime(MONOTONIC), macOS: mach_absolute_time, Windows: QueryPerformanceCounter
+        /// TODO: Needs Sys.clock_gettime(MONOTONIC) intrinsic
         let getMonotonicTicks () : int64 =
             Unchecked.defaultof<int64>
 
         /// Get tick frequency (ticks per second) for high-resolution timer.
-        /// Alex implementations: Linux: 1e9, macOS: mach_timebase_info, Windows: QueryPerformanceFrequency
+        /// TODO: Needs platform-specific frequency intrinsic
         let getTickFrequency () : int64 =
             Unchecked.defaultof<int64>
 
         /// Sleep for specified milliseconds.
-        /// Alex implementations: Linux/macOS: nanosleep, Windows: Sleep
+        /// TODO: Needs Sys.nanosleep intrinsic
         let sleep (milliseconds: int) : unit =
             ()
-
-        // ═══════════════════════════════════════════════════════════════════════════
-        // Process Control Bindings (delegated to Primitives.Bindings)
-        // ═══════════════════════════════════════════════════════════════════════════
-
-        /// Abort the process immediately with an exit code.
-        /// Alex implementations: Linux/macOS: exit() syscall, Windows: ExitProcess() API
-        /// This function never returns.
-        let inline abort (exitCode: int) : unit =
-            Primitives.Bindings.abort exitCode

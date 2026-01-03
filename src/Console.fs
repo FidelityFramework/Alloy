@@ -22,16 +22,18 @@ module Console =
     let STDERR_FILENO = STDERR
 
     // ═══════════════════════════════════════════════════════════════════
-    // I/O primitives - delegate to Primitives.Bindings (BCL-free)
+    // I/O primitives - direct FNCS Sys intrinsics (BCL-free)
     // ═══════════════════════════════════════════════════════════════════
 
-    /// Native write operation - delegates to Primitives.Bindings.writeBytes
+    /// Native write operation - FNCS Sys.write intrinsic
+    /// Sys.write: fd:int -> buffer:nativeptr<byte> -> count:int -> int
     let inline writeBytes (fd: int) (buffer: nativeptr<byte>) (count: int) : int =
-        Bindings.writeBytes fd (NativePtr.toNativeInt buffer) count
+        Sys.write fd buffer count
 
-    /// Native read operation - delegates to Primitives.Bindings.readBytes
+    /// Native read operation - FNCS Sys.read intrinsic
+    /// Sys.read: fd:int -> buffer:nativeptr<byte> -> maxCount:int -> int
     let inline readBytes (fd: int) (buffer: nativeptr<byte>) (maxCount: int) : int =
-        Bindings.readBytes fd (NativePtr.toNativeInt buffer) maxCount
+        Sys.read fd buffer maxCount
 
     // ═══════════════════════════════════════════════════════════════════
     // Low-level output functions
