@@ -97,19 +97,9 @@ module Pointer =
         let addr2 = NativePtr.toNativeInt p2
         int ((addr1 - addr2) / nativeint sizeof<'T>)
 
-    /// <summary>
-    /// Copies count elements from source to destination.
-    /// </summary>
-    let inline copy<'T when 'T : unmanaged> (src: nativeptr<'T>) (dst: nativeptr<'T>) (count: int) : unit =
-        for i = 0 to count - 1 do
-            NativePtr.set dst i (NativePtr.get src i)
-
-    /// <summary>
-    /// Fills count elements starting at ptr with the specified value.
-    /// </summary>
-    let inline fill<'T when 'T : unmanaged> (ptr: nativeptr<'T>) (count: int) (value: 'T) : unit =
-        for i = 0 to count - 1 do
-            NativePtr.set ptr i value
+    // NOTE: copy and fill are FNCS intrinsics - use FSharp.NativeInterop.NativePtr.copy directly
+    // FNCS maps NativePtr.copy to llvm.memcpy intrinsic
+    // DO NOT shadow these with for-loop implementations
 
     /// <summary>
     /// Compares two memory regions element by element.

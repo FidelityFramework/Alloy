@@ -34,14 +34,27 @@ module String =
     let inline charAt (index: int) (s: string) : char = s.[index]
 
     // ═══════════════════════════════════════════════════════════════════
-    // Concatenation
+    // Concatenation - Native implementation
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>Concatenates two strings.</summary>
-    let inline concat2 (s1: string) (s2: string) : string = s1 + s2
+    /// Native implementation: stack-allocate buffer, memcpy both strings, return fat pointer
+    let inline concat2 (s1: string) (s2: string) : string =
+        let len1 = s1.Length
+        let len2 = s2.Length
+        let totalLen = len1 + len2
+        // Stack allocate buffer for result
+        let buffer = NativePtr.stackalloc<byte> totalLen
+        // Copy s1 bytes using memcpy
+        NativePtr.copy buffer s1.Pointer len1
+        // Copy s2 bytes to offset position
+        NativePtr.copy (NativePtr.add buffer len1) s2.Pointer len2
+        // Create result fat pointer
+        NativeStr.fromPointer buffer totalLen
 
     /// <summary>Concatenates three strings.</summary>
-    let inline concat3 (s1: string) (s2: string) (s3: string) : string = s1 + s2 + s3
+    let inline concat3 (s1: string) (s2: string) (s3: string) : string =
+        concat2 (concat2 s1 s2) s3
 
     // ═══════════════════════════════════════════════════════════════════
     // Comparison
