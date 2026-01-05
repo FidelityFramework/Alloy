@@ -8,8 +8,7 @@ open FSharp.NativeInterop
 /// NOTE: String type with native semantics (UTF-8 fat pointer) is provided by FNCS.
 /// In native compilation, string has: Pointer (nativeptr<byte>), Length (int)
 ///
-/// For .NET compatibility, operations that need low-level byte access use
-/// BCL encoding utilities. FNCS compilation uses direct member access.
+/// All operations use direct pointer access - no BCL dependencies.
 module Text =
 
     // ═══════════════════════════════════════════════════════════════════
@@ -86,22 +85,24 @@ module Text =
                                  (int (b3 &&& 0x3Fuy))
                         struct (cp, 4)
 
-        /// Counts the number of Unicode codepoints in a UTF-8 byte sequence.
-        /// For .NET compat, uses BCL encoding. FNCS uses direct byte access.
+        /// Returns the byte length of a native UTF-8 string.
+        /// For actual codepoint counting, use calculateCodepointCount from Utf8 module.
         let inline countCodepoints (str: string) : int =
-            // For .NET compat
-            str.Length  // This counts UTF-16 code units, not codepoints
-            // FNCS would use: direct byte traversal of str.Pointer/str.Length
+            str.Length  // Native string length IS byte count (UTF-8)
 
         /// Gets UTF-8 bytes from a string.
-        /// For .NET compat, uses BCL encoding. FNCS uses direct access.
+        /// Native strings are already UTF-8 encoded.
         let inline getBytes (str: string) : byte[] =
-            System.Text.Encoding.UTF8.GetBytes(str)
+            let arr = Array.zeroCreate<byte> str.Length
+            if str.Length > 0 then
+                NativePtr.copy (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&arr.[0])) str.Pointer str.Length
+            arr
 
         /// Creates a string from UTF-8 bytes.
-        /// For .NET compat, uses BCL encoding. FNCS constructs directly.
+        /// Creates native string from byte array pointer.
         let inline fromBytes (bytes: byte[]) : string =
-            System.Text.Encoding.UTF8.GetString(bytes)
+            if bytes.Length = 0 then ""
+            else NativeStr.fromPointer (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])) bytes.Length
 
     // ═══════════════════════════════════════════════════════════════════
     // String Operations
@@ -109,27 +110,36 @@ module Text =
     // ═══════════════════════════════════════════════════════════════════
 
     module Str =
-        /// Returns true if the string is empty or null.
-        let inline isEmpty (s: string) : bool =
-            System.String.IsNullOrEmpty(s)
+        /// Returns true if the string is empty.
+        /// Native strings are never null, only check length.
+        let inline isEmpty (s: string) : bool = s.Length = 0
 
         /// Returns the byte length of the string (UTF-8).
-        /// For .NET compat, encodes to get byte count.
-        let inline byteLength (s: string) : int =
-            System.Text.Encoding.UTF8.GetByteCount(s)
+        /// Native strings are already UTF-8, so Length IS byte length.
+        let inline byteLength (s: string) : int = s.Length
 
         /// Returns the character length of the string.
-        let inline length (s: string) : int =
-            s.Length
+        let inline length (s: string) : int = s.Length
 
         /// Compares two strings for equality.
-        let inline equals (a: string) (b: string) : bool =
-            a = b
+        let inline equals (a: string) (b: string) : bool = a = b
 
-        /// Compares two strings lexicographically.
+        /// Compares two strings lexicographically (native byte comparison).
         /// Returns: negative if a < b, zero if a = b, positive if a > b.
         let inline compare (a: string) (b: string) : int =
-            System.String.Compare(a, b, System.StringComparison.Ordinal)
+            let len1, len2 = a.Length, b.Length
+            let minLen = if len1 < len2 then len1 else len2
+            let mutable i = 0
+            let mutable result = 0
+            while result = 0 && i < minLen do
+                let b1 = int (NativePtr.get a.Pointer i)
+                let b2 = int (NativePtr.get b.Pointer i)
+                result <- b1 - b2
+                i <- i + 1
+            if result <> 0 then result
+            elif len1 < len2 then -1
+            elif len1 > len2 then 1
+            else 0
 
         /// Checks if a string starts with a prefix.
         let inline startsWith (prefix: string) (s: string) : bool =
@@ -153,7 +163,7 @@ module Text =
 
         /// Counts occurrences of a substring.
         let inline countOccurrences (needle: string) (haystack: string) : int =
-            if System.String.IsNullOrEmpty(needle) then 0
+            if needle.Length = 0 then 0
             else
                 let mutable count = 0
                 let mutable startIndex = 0
@@ -201,8 +211,16 @@ module Text =
             else
                 value.ToString("x")
 
+        /// Creates a string of repeated characters (ASCII only).
+        let inline repeatChar (c: char) (count: int) : string =
+            if count <= 0 then ""
+            else
+                let buffer = NativePtr.stackalloc<byte> count
+                NativePtr.fill buffer (byte c) count
+                NativeStr.fromPointer buffer count
+
         /// Converts an integer to a string with padding.
         let inline int32ToStringPadded (value: int) (width: int) (padChar: char) : string =
             let s = string value
             if s.Length >= width then s
-            else System.String(padChar, width - s.Length) + s
+            else repeatChar padChar (width - s.Length) + s

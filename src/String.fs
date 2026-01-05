@@ -63,9 +63,22 @@ module String =
     /// <summary>Checks if two strings are equal.</summary>
     let inline equals (s1: string) (s2: string) : bool = s1 = s2
 
-    /// <summary>Compares two strings.</summary>
+    /// <summary>Compares two strings lexicographically using native byte comparison.</summary>
     let inline compare (s1: string) (s2: string) : int =
-        System.String.Compare(s1, s2, System.StringComparison.Ordinal)
+        let len1 = s1.Length
+        let len2 = s2.Length
+        let minLen = if len1 < len2 then len1 else len2
+        let mutable i = 0
+        let mutable result = 0
+        while result = 0 && i < minLen do
+            let b1 = int (NativePtr.get s1.Pointer i)
+            let b2 = int (NativePtr.get s2.Pointer i)
+            result <- b1 - b2
+            i <- i + 1
+        if result <> 0 then result
+        elif len1 < len2 then -1
+        elif len1 > len2 then 1
+        else 0
 
     // ═══════════════════════════════════════════════════════════════════
     // Character Classification

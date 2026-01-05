@@ -31,9 +31,6 @@ module NativeBuffer =
         /// as stack memory is cleaned up automatically when the function returns.
         member this.Dispose() = ()
 
-        interface System.IDisposable with
-            member this.Dispose() = ()
-
     /// Creates a stack-allocated buffer of the specified size.
     /// Use with 'use' binding for automatic cleanup semantics:
     ///   use buffer = stackBuffer<byte> 256

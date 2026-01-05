@@ -80,20 +80,19 @@ module Uuid =
     /// <param name="name">The name string</param>
     /// <returns>A version 5 UUID</returns>
     let newUuidV5 (``namespace``: Uuid) (name: string) : Uuid =
-        // Get UTF-8 bytes of the name
-        let nameBytes = System.Text.Encoding.UTF8.GetBytes(name)
+        // Native string IS UTF-8 with Pointer/Length members
 
         // Combine namespace (16 bytes) and name bytes
-        let totalLen = 16 + nameBytes.Length
+        let totalLen = 16 + name.Length
         let data = Array.zeroCreate totalLen
 
         // Copy namespace bytes
         for i = 0 to 15 do
             data.[i] <- ``namespace``.Data.[i]
 
-        // Copy name bytes
-        for i = 0 to nameBytes.Length - 1 do
-            data.[16 + i] <- nameBytes.[i]
+        // Copy name bytes directly from native string
+        for i = 0 to name.Length - 1 do
+            data.[16 + i] <- NativePtr.get name.Pointer i
 
         // Normally we would compute SHA-1 hash here
         // For this example, we'll just do a simple hash
@@ -167,39 +166,14 @@ module Uuid =
 
     /// <summary>
     /// Converts UUID to standard string representation.
-    /// For .NET compat, uses BCL string construction.
+    /// Uses native buffer and NativeStr.fromPointer.
     /// </summary>
     /// <param name="uuid">The UUID to convert</param>
     /// <returns>A string in the format "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"</returns>
     let toString (uuid: Uuid) : string =
-        let sb = System.Text.StringBuilder(36)
-        let inline appendHexByte (b: byte) =
-            let hi = int (b >>> 4) &&& 0xF
-            let lo = int b &&& 0xF
-            sb.Append(hexChars.[hi]) |> ignore
-            sb.Append(hexChars.[lo]) |> ignore
-
-        appendHexByte uuid.Data.[0]
-        appendHexByte uuid.Data.[1]
-        appendHexByte uuid.Data.[2]
-        appendHexByte uuid.Data.[3]
-        sb.Append('-') |> ignore
-        appendHexByte uuid.Data.[4]
-        appendHexByte uuid.Data.[5]
-        sb.Append('-') |> ignore
-        appendHexByte uuid.Data.[6]
-        appendHexByte uuid.Data.[7]
-        sb.Append('-') |> ignore
-        appendHexByte uuid.Data.[8]
-        appendHexByte uuid.Data.[9]
-        sb.Append('-') |> ignore
-        appendHexByte uuid.Data.[10]
-        appendHexByte uuid.Data.[11]
-        appendHexByte uuid.Data.[12]
-        appendHexByte uuid.Data.[13]
-        appendHexByte uuid.Data.[14]
-        appendHexByte uuid.Data.[15]
-        sb.ToString()
+        let buffer = NativePtr.stackalloc<byte> 36
+        let _ = toStringTo buffer uuid
+        NativeStr.fromPointer buffer 36
 
     /// <summary>
     /// Parse a UUID from a string.

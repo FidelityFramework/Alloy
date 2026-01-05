@@ -162,7 +162,7 @@ module Bits =
     /// Adds two 32-bit integers with overflow detection
     let inline addChecked32 (a: I32) (b: I32) : I32 voption =
         let result = int64 a + int64 b
-        if result > int64 System.Int32.MaxValue || result < int64 System.Int32.MinValue then
+        if result > int64 2147483647 || result < int64 -2147483648 then
             ValueNone
         else
             ValueSome (int32 result)
@@ -170,7 +170,7 @@ module Bits =
     /// Subtracts two 32-bit integers with overflow detection
     let inline subChecked32 (a: I32) (b: I32) : I32 voption =
         let result = int64 a - int64 b
-        if result > int64 System.Int32.MaxValue || result < int64 System.Int32.MinValue then
+        if result > int64 2147483647 || result < int64 -2147483648 then
             ValueNone
         else
             ValueSome (int32 result)
@@ -178,7 +178,7 @@ module Bits =
     /// Multiplies two 32-bit integers with overflow detection
     let inline mulChecked32 (a: I32) (b: I32) : I32 voption =
         let result = int64 a * int64 b
-        if result > int64 System.Int32.MaxValue || result < int64 System.Int32.MinValue then
+        if result > int64 2147483647 || result < int64 -2147483648 then
             ValueNone
         else
             ValueSome (int32 result)
@@ -190,21 +190,21 @@ module Bits =
     /// Saturating add for 32-bit signed
     let inline addSat32 (a: I32) (b: I32) : I32 =
         let result = int64 a + int64 b
-        if result > int64 System.Int32.MaxValue then System.Int32.MaxValue
-        elif result < int64 System.Int32.MinValue then System.Int32.MinValue
+        if result > int64 2147483647 then 2147483647
+        elif result < int64 -2147483648 then -2147483648
         else int32 result
 
     /// Saturating subtract for 32-bit signed
     let inline subSat32 (a: I32) (b: I32) : I32 =
         let result = int64 a - int64 b
-        if result > int64 System.Int32.MaxValue then System.Int32.MaxValue
-        elif result < int64 System.Int32.MinValue then System.Int32.MinValue
+        if result > int64 2147483647 then 2147483647
+        elif result < int64 -2147483648 then -2147483648
         else int32 result
 
     /// Saturating add for 32-bit unsigned
     let inline addSatU32 (a: U32) (b: U32) : U32 =
         let result = uint64 a + uint64 b
-        if result > uint64 System.UInt32.MaxValue then System.UInt32.MaxValue
+        if result > uint64 4294967295u then 4294967295u
         else uint32 result
 
     /// Saturating subtract for 32-bit unsigned

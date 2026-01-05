@@ -261,9 +261,6 @@ module Memory =
         /// <summary>Disposes of the buffer. For StackBuffer, this is a no-op as stack memory is cleaned up automatically.</summary>
         member this.Dispose() = ()
 
-        interface System.IDisposable with
-            member this.Dispose() = ()
-
         /// <summary>Creates a read-only span over the entire buffer.</summary>
         /// <returns>A new read-only span over the entire buffer.</returns>
         member this.AsReadOnlySpan() =
@@ -367,8 +364,8 @@ module Memory =
     // - GPU: Parallel lane execution
     // - Large sizes: memcpy/memset intrinsics
     //
-    // At the F# level, these are implemented as simple loops for .NET compat.
-    // The Firefly compiler recognizes these patterns and emits optimal code.
+    // At the F# level, these use simple loops (valid F# source).
+    // Firefly recognizes these patterns and emits target-optimal code.
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -379,8 +376,7 @@ module Memory =
     /// <param name="dest">Destination pointer</param>
     /// <param name="length">Number of bytes to copy</param>
     let inline copy (src: nativeptr<byte>) (dest: nativeptr<byte>) (length: int) : unit =
-        for i = 0 to length - 1 do
-            NativePtr.set dest i (NativePtr.get src i)
+        NativePtr.copy dest src length
 
     /// <summary>
     /// Copy elements from source to destination with type safety.
@@ -390,8 +386,7 @@ module Memory =
     /// <param name="dest">Destination pointer</param>
     /// <param name="count">Number of elements to copy</param>
     let inline copyElements<'T when 'T : unmanaged> (src: nativeptr<'T>) (dest: nativeptr<'T>) (count: int) : unit =
-        for i = 0 to count - 1 do
-            NativePtr.set dest i (NativePtr.get src i)
+        NativePtr.copy dest src count
 
     /// <summary>
     /// Zero a memory region.
@@ -400,8 +395,7 @@ module Memory =
     /// <param name="dest">Destination pointer</param>
     /// <param name="length">Number of bytes to zero</param>
     let inline zero (dest: nativeptr<byte>) (length: int) : unit =
-        for i = 0 to length - 1 do
-            NativePtr.set dest i 0uy
+        NativePtr.fill dest 0uy length
 
     /// <summary>
     /// Zero elements in a memory region with type safety.
@@ -410,8 +404,8 @@ module Memory =
     /// <param name="dest">Destination pointer</param>
     /// <param name="count">Number of elements to zero</param>
     let inline zeroElements<'T when 'T : unmanaged> (dest: nativeptr<'T>) (count: int) : unit =
-        for i = 0 to count - 1 do
-            NativePtr.set dest i (NativeDefault.zeroed<'T>())
+        let bytePtr = NativePtr.toVoidPtr dest |> NativePtr.ofVoidPtr<byte>
+        NativePtr.fill bytePtr 0uy (count * sizeof<'T>)
 
     /// <summary>
     /// Fill a memory region with a byte value.
@@ -421,8 +415,7 @@ module Memory =
     /// <param name="value">Byte value to fill with</param>
     /// <param name="length">Number of bytes to fill</param>
     let inline fill (dest: nativeptr<byte>) (value: byte) (length: int) : unit =
-        for i = 0 to length - 1 do
-            NativePtr.set dest i value
+        NativePtr.fill dest value length
 
     /// <summary>
     /// Compare two memory regions for equality.

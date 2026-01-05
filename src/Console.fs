@@ -23,15 +23,17 @@ module Console =
 
     // ═══════════════════════════════════════════════════════════════════
     // I/O primitives - direct FNCS Sys intrinsics (BCL-free)
+    // NTU mapping: int → NTUint (platform word), FNCS resolves sizes via platform quotations.
+    // We use 'int' in the API for F# compatibility; FNCS handles NTU identity.
     // ═══════════════════════════════════════════════════════════════════
 
     /// Native write operation - FNCS Sys.write intrinsic
-    /// Sys.write: fd:int -> buffer:nativeptr<byte> -> count:int -> int
+    /// FNCS maps: fd:NTUint -> buffer:NTUptr<byte> -> count:NTUint -> NTUint
     let inline writeBytes (fd: int) (buffer: nativeptr<byte>) (count: int) : int =
         Sys.write fd buffer count
 
     /// Native read operation - FNCS Sys.read intrinsic
-    /// Sys.read: fd:int -> buffer:nativeptr<byte> -> maxCount:int -> int
+    /// FNCS maps: fd:NTUint -> buffer:NTUptr<byte> -> maxCount:NTUint -> NTUint
     let inline readBytes (fd: int) (buffer: nativeptr<byte>) (maxCount: int) : int =
         Sys.read fd buffer maxCount
 
@@ -86,10 +88,10 @@ module Console =
     /// Reads a line from the specified file descriptor into a buffer.
     /// Returns the number of bytes read (not including any null terminator).
     let inline readLineInto (fd: int) (buffer: nativeptr<byte>) (maxLength: int) : int =
-        let mutable count = 0
+        let mutable count : int = 0
         let mutable done_ = false
 
-        while not done_ && count < (maxLength - 1) do
+        while not done_ && count < (maxLength - (1 : int)) do
             let mutable b = 0uy
             let ptr = NativePtr.ofVoidPtr<byte>(NativePtr.toVoidPtr &&b)
             let bytesRead = readBytes fd ptr 1
@@ -223,7 +225,7 @@ module Console =
     /// Useful with byte literals: prompt' "Name: "B buffer 256
     let inline prompt' (promptBytes: byte[]) (buffer: nativeptr<byte>) (maxLen: int) : string =
         // Write prompt bytes (excluding null terminator)
-        let len = promptBytes.Length - 1  // byte literals have null terminator
+        let len : int = promptBytes.Length - (1 : int)  // byte literals have null terminator
         let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&promptBytes.[0])
         writeBytes 1 ptr len |> ignore
         readln buffer maxLen
@@ -235,7 +237,7 @@ module Console =
     /// Writes a byte literal to stdout (no newline).
     /// Example: Console.writeB "Hello"B
     let inline writeB (bytes: byte[]) : unit =
-        let len = bytes.Length - 1  // byte literals include null terminator
+        let len : int = bytes.Length - (1 : int)  // byte literals include null terminator
         let ptr = NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])
         writeBytes 1 ptr len |> ignore
 

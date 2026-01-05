@@ -6,6 +6,40 @@ namespace Alloy
 module Core =
 
     // ===================================
+    // NTU Semantic Type Aliases
+    // ===================================
+    // Platform-generic types for the Native Type Universe (NTU).
+    // These are semantic aliases that FNCS recognizes and maps to NTU kinds.
+    // Width is resolved via platform quotations at code generation time.
+    //
+    // Usage:
+    // - Level 1 (Default): Use `int`, `uint` - FNCS provides native semantics
+    // - Level 2/3 (Explicit): Use `platformint`, `platformsize` for clarity
+    //
+    // Type identity: platformint ≠ int64 even if same width on some platforms
+    // ===================================
+
+    /// Platform-dependent signed integer (platform word size).
+    /// On x86_64: 64-bit, on ARM32: 32-bit.
+    /// FNCS maps to NTUint.
+    type platformint = int
+
+    /// Platform-dependent unsigned integer (platform word size).
+    /// On x86_64: 64-bit, on ARM32: 32-bit.
+    /// FNCS maps to NTUuint.
+    type platformuint = uint
+
+    /// Platform-dependent size type (like C size_t).
+    /// Used for array lengths, memory sizes, byte counts.
+    /// FNCS maps to NTUsize.
+    type platformsize = unativeint
+
+    /// Platform-dependent pointer difference type (like C ptrdiff_t).
+    /// Used for pointer arithmetic results.
+    /// FNCS maps to NTUdiff.
+    type platformdiff = nativeint
+
+    // ===================================
     // NOTE: Option type with value semantics is provided by FNCS
     // FNCS resolves 'option<'T>' to value semantics (stack-allocated, non-nullable)
     // The shadow machinery has been removed per fsnative-spec

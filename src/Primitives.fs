@@ -6,6 +6,11 @@ open FSharp.NativeInterop
 /// Primitive operations and bindings that must be defined before all other Alloy modules.
 /// Alex intercepts calls to Primitives.Bindings and provides platform-specific implementations.
 ///
+/// NTU (Native Type Universe) Integration:
+/// - FNCS maps 'int' to NTUint (platform word size), 'nativeptr<'T>' to NTUptr
+/// - Type identity is checked by FNCS (NTUint ≠ NTUint64 even if same width)
+/// - Width is resolved by Alex via platform quotations (e.g., NTUint → i64 on x86_64)
+///
 /// NOTE: String type with native semantics (UTF-8 fat pointer) is provided by FNCS.
 /// In native compilation, 'string' has members: Pointer (nativeptr<byte>), Length (int)
 [<AutoOpen>]
@@ -38,12 +43,15 @@ module Primitives =
     /// Write a string to a file descriptor using Sys.write intrinsic.
     /// In native compilation, string is a UTF-8 fat pointer with intrinsic Pointer and Length.
     ///
+    /// NTU mapping: int → NTUint, nativeptr<byte> → NTUptr<byte>
+    /// Alex resolves NTUint to i64 on x86_64, i32 on ARM32.
+    ///
     /// NATIVE: NativeStr = {ptr: *u8, len: usize}
     /// FNCS provides: s.Pointer (nativeptr<byte>), s.Length (int)
     let inline writeStr (fd: int) (s: string) : int =
         // Native string IS UTF-8 bytes - no encoding needed
         // Access intrinsic members provided by FNCS for NativeStr type
-        // Sys.write is an FNCS intrinsic: fd:int -> buffer:nativeptr<byte> -> count:int -> int
+        // Sys.write: fd:NTUint -> buffer:NTUptr<byte> -> count:NTUint -> NTUint
         Sys.write fd s.Pointer s.Length
 
     /// Write a string to stderr.
@@ -66,5 +74,5 @@ module Primitives =
         // Write newline
         writeNewline STDERR
         // Abort with exit code 1
-        // Sys.exit has type int -> 'a (never returns, polymorphic return)
+        // Sys.exit: NTUint -> 'a (never returns, polymorphic return)
         Sys.exit 1

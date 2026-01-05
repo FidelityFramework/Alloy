@@ -62,10 +62,7 @@ sources = [
     # Operators (wraps Numerics with standard operator symbols)
     "Operators.fs",
 
-    # Platform bindings (BCL-free - must come before Console/Time)
-    "Platform.fs",
-
-    # I/O modules (depend on Platform.Bindings and Utf8)
+    # I/O modules (use FNCS Sys intrinsics for platform operations)
     "Console.fs",
     "Time.fs"
 ]

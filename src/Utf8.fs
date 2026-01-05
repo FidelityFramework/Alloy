@@ -9,8 +9,7 @@ open FSharp.NativeInterop
 /// NOTE: String type with native semantics (UTF-8 fat pointer) is provided by FNCS.
 /// In native compilation, string has: Pointer (nativeptr<byte>), Length (int)
 ///
-/// For .NET compatibility, uses BCL encoding utilities.
-/// FNCS compilation uses direct member access on string.
+/// All operations use direct pointer access - no BCL dependencies.
 /// </summary>
 module Utf8 =
 
@@ -115,27 +114,30 @@ module Utf8 =
         allAscii
 
     // ═══════════════════════════════════════════════════════════════════
-    // String-based operations (for .NET compatibility)
-    // FNCS provides string with Pointer/Length for native compilation
+    // String-based operations (native UTF-8)
+    // Native string IS already UTF-8 encoded with Pointer/Length members
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Gets the UTF-8 byte count for a string.
-    /// For .NET compat, uses BCL encoding. FNCS uses string.Length directly (already UTF-8).
+    /// Native strings are already UTF-8, so Length IS the byte count.
     /// </summary>
-    let inline byteCount (s: string) : int =
-        System.Text.Encoding.UTF8.GetByteCount(s)
+    let inline byteCount (s: string) : int = s.Length
 
     /// <summary>
     /// Gets UTF-8 bytes from a string as a byte array.
-    /// For .NET compat, uses BCL encoding. FNCS constructs from string.Pointer/Length.
+    /// Copies from native string's Pointer to a new byte array.
     /// </summary>
     let inline getBytes (s: string) : byte[] =
-        System.Text.Encoding.UTF8.GetBytes(s)
+        let arr = Array.zeroCreate<byte> s.Length
+        if s.Length > 0 then
+            NativePtr.copy (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&arr.[0])) s.Pointer s.Length
+        arr
 
     /// <summary>
     /// Creates a string from UTF-8 bytes.
-    /// For .NET compat, uses BCL encoding. FNCS constructs directly from (ptr, len).
+    /// Creates native string from byte array pointer.
     /// </summary>
     let inline fromBytes (bytes: byte[]) : string =
-        System.Text.Encoding.UTF8.GetString(bytes)
+        if bytes.Length = 0 then ""
+        else NativeStr.fromPointer (NativePtr.ofNativeInt<byte> (NativePtr.toNativeInt &&bytes.[0])) bytes.Length
